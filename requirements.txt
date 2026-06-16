@@ -1,0 +1,7 @@
+# SUBRATI Voice Assistant - Dependencies
+vosk>=0.3.45
+sounddevice>=0.4.6
+edge-tts>=6.1.9
+requests>=2.31.0
+python-dotenv>=1.0.0
+pygame>=2.5.0
