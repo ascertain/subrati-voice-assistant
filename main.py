@@ -145,8 +145,9 @@ def run_text_mode():
 if __name__ == "__main__":
     if "--text" in sys.argv:
         run_text_mode()
-    elif "--stealth" in sys.argv:
+    elif "--assistant" in sys.argv:
+        run_voice_mode()
+    else:
+        # Default: stealth conversation listener
         from stealth_mode import run_stealth_mode
         run_stealth_mode()
-    else:
-        run_voice_mode()

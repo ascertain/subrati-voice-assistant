@@ -1,23 +1,27 @@
-# 🚀 SUBRATI - Cloud-First Voice Assistant
+# 🚀 SUBRATI - AI Voice Assistant & Stealth Conversation Coach
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Groq](https://img.shields.io/badge/LLM-Groq%20API-orange.svg)](https://groq.com)
 
-> **A fast, free, lightweight voice AI assistant that runs on any PC.**  
+> **A fast, free, AI-powered voice assistant with stealth conversation coaching, hotkey controls, auto-learning, and call summarization.**  
 > No GPU needed. No heavy local models. Just smart API routing.
 
 ---
 
 ## ⚡ Features
 
-- 🎤 **Offline Speech Recognition** — Vosk STT runs locally on CPU (no internet needed for listening)
-- 🔊 **Neural Text-to-Speech** — Edge TTS provides natural-sounding voices at zero cost
-- 🧠 **Smart LLM Fallback Chain** — Groq → Gemini → HuggingFace (never stuck if one API is down)
+- 🎤 **Offline Speech Recognition** — Vosk STT runs locally (no internet needed for listening)
+- 🔊 **Neural Text-to-Speech** — Edge TTS (free, natural voices)
+- 🧠 **Smart LLM Fallback Chain** — Groq → Gemini → HuggingFace (never stuck)
 - 🚀 **Sub-second AI Responses** — Groq delivers lightning-fast inference
-- 🎯 **Intelligent Query Routing** — Automatically classifies chat/code/search queries
-- 🔍 **Free Web Search** — DuckDuckGo integration for real-time information
-- 💻 **Text Mode** — Test without microphone using `--text` flag
+- 🕵️ **Stealth Conversation Coach** — Listens to conversations, auto-suggests replies silently
+- ⌨️ **Hotkey Controls** — Arrow keys for capture/answer/learn/reset
+- 📚 **Training System** — Teach SUBRATI your context, it learns and evolves
+- 🤖 **Auto Question Detection** — Senses questions and suggests answers automatically
+- 💡 **Out-of-Box Answers** — Helps even for topics not in training (general AI knowledge)
+- 📋 **Call Summary & Actions** — Auto-generates meeting summaries with action items
+- 🧪 **Self-Learning** — Remembers what worked, gets better over time
 - 🆓 **100% Free** — All APIs have generous free tiers
 
 ---
@@ -25,9 +29,16 @@
 ## 🏗️ Architecture
 
 ```
-🎤 Voice Input (Vosk - offline)
+🎤 Microphone (always listening)
         ↓
-   Smart Router (chat / code / search)
+   Vosk STT (offline, on CPU)
+        ↓
+   ┌──────────────────────────────┐
+   │     Smart Router             │
+   │  ← Left Key = Capture       │
+   │  → Right Key = Answer       │
+   │  Auto-detect = Questions    │
+   └──────────────────────────────┘
         ↓
  ┌───────────────────┐
  │   Groq API        │  ⚡ PRIMARY (sub-second, Llama 3.3 70B)
@@ -41,7 +52,11 @@
  │  HuggingFace API  │  🥉 TERTIARY (Mistral 7B)
  └───────────────────┘
         ↓
-🔊 Edge TTS Output (neural voice)
+ ┌───────────────────┐
+ │  Training Context │  📚 Your prepared answers + learned patterns
+ └───────────────────┘
+        ↓
+🔊 Edge TTS (voice) OR 📝 Screen (silent)
 ```
 
 ---
@@ -113,17 +128,50 @@ HF_API_KEY=hf_your_token_here
 ### 6. Run SUBRATI
 
 ```bash
-# 🎤 Full voice mode (mic + speaker)
+# 🕵️ Stealth mode — conversation coach (DEFAULT)
 python main.py
 
-# 📝 Text-only mode (no mic required, great for testing)
+# 🎤 Voice assistant mode (ask questions, get spoken answers)
+python main.py --assistant
+
+# 📝 Text-only mode (keyboard, no mic)
 python main.py --text
+
+# 📋 Summarize last conversation
+python summarize.py
+
+# 📋 Summarize from a notes file
+python summarize.py --file notes.txt
 ```
 
 ---
 
 ## 📁 Project Structure
 
+```
+subrati/
+├── main.py              # Entry point (routes to modes)
+├── stealth_mode.py      # 🕵️ Stealth conversation coach + hotkeys
+├── summarize.py         # 📋 Call summary & action items generator
+├── config.py            # Configuration, API keys, models
+├── llm_chain.py         # LLM fallback chain (Groq → Gemini → HF)
+├── router.py            # Smart query router + DuckDuckGo
+├── voice_input.py       # Vosk STT (offline, smart silence detection)
+├── voice_output.py      # Edge TTS (neural text-to-speech)
+├── memory.py            # Learning system (loads training, saves patterns)
+├── requirements.txt     # Python dependencies
+├── .env.example         # API key template
+├── .env                 # Your API keys (git-ignored)
+├── .gitignore           # Git ignore rules
+├── training/            # 📚 Training & learning data
+│   ├── context.txt      # Your personal context (edit this!)
+│   ├── interview_prep.txt  # Interview preparation context
+│   ├── interview_qa.txt    # Full Q&A for all rounds
+│   ├── memory.json      # Auto-saved conversation patterns
+│   └── learnings.json   # Auto-evolved learnings
+├── summaries/           # 📋 Generated call summaries (auto-created)
+│   └── summary_*.txt    # One file per session
+└── README.md            # This file
 ```
 subrati/
 ├── main.py              # Main entry point & voice/text assistant loop
@@ -141,70 +189,130 @@ subrati/
 
 ---
 
-## 🎯 Smart Routing Modes
+## 🕵️ Stealth Conversation Coach (Main Feature)
 
-SUBRATI automatically detects your intent and routes accordingly:
+The default mode. SUBRATI listens to conversations, detects questions, and suggests answers silently on screen.
+
+### How It Works
+
+1. **Start:** `python main.py`
+2. **Listens** to everything being said (captures to screen)
+3. **Auto-detects questions** → shows suggested answer silently
+4. **Hotkeys** for manual control:
+
+### ⌨️ Hotkey Controls
+
+| Key | Action | Description |
+|-----|--------|-------------|
+| **← Left Arrow** | Start capture | Begin focused listening (capture the question) |
+| **→ Right Arrow** | Answer NOW | Generate answer for captured/last question |
+| **↑ Up Arrow** | Mark good | Tell SUBRATI this answer was helpful (learns) |
+| **↓ Down Arrow** | Reset | Clear conversation history |
+
+### Voice Commands
+
+| Command | Action |
+|---------|--------|
+| "speak" | Switch to voice output 🔊 |
+| "silent" | Switch to text-only (default) 📝 |
+| "suggest" / "help me" | Force a suggestion |
+| "summarize" / "wrap up" | Generate call summary + action items |
+| "exit" | Stop (auto-saves summary + learns) |
+
+### Three Ways to Get Answers
+
+| Method | When | How |
+|--------|------|-----|
+| **Auto-detect** | Always | Senses questions, suggests automatically |
+| **Hotkeys** | Manual control | ← to capture, → to answer |
+| **Voice** | Quick trigger | Say "suggest" or "help me" |
+
+### Out-of-Box Intelligence
+
+- Question matches **training** → uses prepared answer (adapted naturally)
+- Question is **new/unknown** → answers from general AI knowledge
+- **Never stuck** — helps with anything
+
+---
+
+## 📚 Training System
+
+### 1. Initial Training (you write)
+
+Edit `training/context.txt`:
+```text
+## About Me
+- Name: John
+- Communication style: direct, uses examples
+
+## Rules
+- Keep answers simple
+- Use real-world examples from my work
+```
+
+### 2. Prepared Q&A
+
+Add any `.txt` file in `training/` with Q&A pairs — SUBRATI loads them all.
+
+### 3. Self-Learning (automatic)
+
+- **Press ↑ Up** after a good suggestion → saves to memory
+- **On exit** → analyzes conversation, extracts learnings
+- **Next session** → uses learnings for better answers
+
+---
+
+## 📋 Call Summary & Action Items
+
+After any conversation, SUBRATI generates:
+- Summary of discussion
+- Key decisions made
+- Action items with owners
+- Follow-up needed
+
+**Trigger:** Say "summarize" during a call, or run `python summarize.py` after.  
+**Auto-save:** Summaries saved to `summaries/` on exit.
+
+---
+
+## 🎯 Smart Routing (Assistant Mode)
 
 | Mode | Trigger Keywords | What Happens |
 |------|-----------------|--------------|
-| **💬 Chat** | General questions, greetings | Direct LLM conversational response |
-| **💻 Code** | "code", "function", "bug", "error", "python", "debug" | Technical coding-focused answers |
-| **🔍 Search** | "latest", "news", "price", "weather", "today" | DuckDuckGo lookup + LLM summarization |
+| **💬 Chat** | General questions | LLM response |
+| **💻 Code** | "code", "function", "bug", "error" | Technical answers |
+| **🔍 Search** | "latest", "news", "price", "weather" | DuckDuckGo + LLM |
 
 ---
 
-## 🤖 LLM Models Used
+## 🤖 LLM Models
 
-| Provider | Model | Use Case |
-|----------|-------|----------|
-| **Groq** | `llama-3.3-70b-versatile` | Primary - fastest inference |
-| **Google** | `gemini-1.5-flash` | Fallback - reliable |
-| **HuggingFace** | `Mistral-7B-Instruct-v0.2` | Last resort - always available |
+| Provider | Model | Speed |
+|----------|-------|-------|
+| **Groq** | `llama-3.3-70b-versatile` | ⚡ Sub-second |
+| **Google** | `gemini-1.5-flash` | Fast |
+| **HuggingFace** | `Mistral-7B-Instruct-v0.2` | Slower |
 
 ---
 
-## 🔊 Voice Configuration
-
-### Available TTS Voices (Edge TTS)
+## 🔊 TTS Voices
 
 Edit `EDGE_TTS_VOICE` in `config.py`:
 
-| Voice | Language | Gender |
-|-------|----------|--------|
-| `en-US-GuyNeural` | English (US) | Male (default) |
-| `en-US-JennyNeural` | English (US) | Female |
-| `en-GB-SoniaNeural` | English (UK) | Female |
-| `en-AU-NatashaNeural` | English (AU) | Female |
-| `en-IN-NeerjaNeural` | English (India) | Female |
+| Voice | Language |
+|-------|----------|
+| `en-US-GuyNeural` | English US Male (default) |
+| `en-US-JennyNeural` | English US Female |
+| `en-GB-SoniaNeural` | English UK Female |
+| `en-IN-NeerjaNeural` | English India Female |
 
 ---
 
-## 🛠️ Customization
+## 📝 First Run
 
-### Change AI personality
-
-Edit `SYSTEM_PROMPT` in `config.py`:
-
-```python
-SYSTEM_PROMPT = """You are SUBRATI, a fast and helpful voice assistant.
-Keep responses concise and natural for spoken delivery."""
-```
-
-### Add new routing keywords
-
-Edit `router.py` → `route_query()` function to add custom trigger words.
-
-### Switch LLM models
-
-Edit `config.py` to change `GROQ_MODEL`, `GEMINI_MODEL`, or `HF_MODEL`.
-
----
-
-## 📝 First Run Notes
-
-- On first launch in **voice mode**, SUBRATI automatically downloads a small Vosk speech model (~50MB). This only happens once.
-- The `pygame` library is used for audio playback. If you hear no audio, ensure your system audio is working.
-- Say **"exit"**, **"quit"**, or **"goodbye"** to stop the assistant.
+- Downloads Vosk model (~50MB) — one time only
+- Hotkeys need terminal window focused
+- Summaries auto-saved to `summaries/`
 
 ---
 
@@ -212,11 +320,13 @@ Edit `config.py` to change `GROQ_MODEL`, `GEMINI_MODEL`, or `HF_MODEL`.
 
 | Issue | Solution |
 |-------|----------|
-| `No Groq API key` | Add your key to `.env` file |
-| `400 Bad Request from Groq` | Model may be deprecated — check available models at Groq console |
-| `No audio output` | Ensure `pygame` is installed and speakers are working |
-| `Microphone not detected` | Check `sounddevice` can see your mic: `python -c "import sounddevice; print(sounddevice.query_devices())"` |
-| `Vosk model download fails` | Manually download from https://alphacephei.com/vosk/models and extract to `vosk-model/` folder |
+| No Groq API key | Add key to `.env` file |
+| 400 from Groq | Update `GROQ_MODEL` in config.py |
+| No audio | Check pygame + speakers |
+| No mic detected | `python -c "import sounddevice; print(sounddevice.query_devices())"` |
+| Vosk download fails | Manual download from https://alphacephei.com/vosk/models |
+| Hotkeys not working | Ensure terminal is focused, pynput installed |
+| Training not loading | Check `.txt` files exist in `training/` |
 
 ---
 
@@ -224,48 +334,29 @@ Edit `config.py` to change `GROQ_MODEL`, `GEMINI_MODEL`, or `HF_MODEL`.
 
 | Package | Purpose |
 |---------|---------|
-| `vosk` | Offline speech-to-text (CPU, fast) |
-| `sounddevice` | Microphone audio capture |
-| `edge-tts` | Free neural text-to-speech |
-| `requests` | HTTP calls to LLM APIs |
-| `python-dotenv` | Load `.env` configuration |
-| `pygame` | Audio file playback |
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Conversation history / memory
-- [ ] Wake word detection ("Hey Subrati")
-- [ ] Multi-language support
-- [ ] Plugin system for custom commands
-- [ ] GUI interface (optional)
-- [ ] Streaming responses for faster perceived speed
+| `vosk` | Offline speech-to-text |
+| `sounddevice` | Microphone capture |
+| `edge-tts` | Neural TTS |
+| `requests` | API calls |
+| `python-dotenv` | .env config |
+| `pygame` | Audio playback |
+| `pynput` | Keyboard hotkeys |
 
 ---
 
 ## 🤝 Contributing
 
 1. Fork the repo
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create feature branch: `git checkout -b feature/my-feature`
+3. Commit: `git commit -m 'Add feature'`
+4. Push: `git push origin feature/my-feature`
+5. Open Pull Request
 
 ---
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-## 🙏 Acknowledgments
-
-- [Groq](https://groq.com) — Lightning-fast free LLM inference
-- [Vosk](https://alphacephei.com/vosk/) — Offline speech recognition
-- [Edge TTS](https://github.com/rany2/edge-tts) — Free neural voices
-- [DuckDuckGo](https://duckduckgo.com) — Free instant answer API
+MIT License — free to use, modify, distribute.
 
 ---
 

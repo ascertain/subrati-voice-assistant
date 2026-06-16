@@ -133,8 +133,8 @@ def listen(recognizer, prompt="🎤 Listening... (speak now, pause when done)") 
 def listen_continuous(recognizer) -> str:
     """
     Continuous listening mode for conversation monitoring.
-    Captures longer stretches of speech (both speakers).
-    Returns text after a longer silence (4 seconds).
+    Captures speech chunks with shorter gaps (captures natural pauses between speakers).
+    Returns text after 2.5 seconds of silence.
     """
     while not audio_queue.empty():
         audio_queue.get()
@@ -142,7 +142,7 @@ def listen_continuous(recognizer) -> str:
     collected_text = []
     last_speech_time = None
     speech_started = False
-    long_silence = 4.0  # Wait longer in conversation mode
+    long_silence = 2.5  # Balanced: captures full exchanges but doesn't lag
 
     with sd.RawInputStream(
         samplerate=16000,

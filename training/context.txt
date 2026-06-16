@@ -1,0 +1,44 @@
+# SUBRATI Training Context
+# =========================
+# Write your personal context here. SUBRATI uses this to understand
+# your personality, relationship, and how to help you.
+# 
+# Edit this file anytime — SUBRATI reads it fresh each session.
+# Be honest and specific. The more context, the better the suggestions.
+
+## About Me
+- Name: [Your name]
+- Personality: [e.g., calm, funny, sarcastic, romantic]
+- Communication style: [e.g., direct, playful, avoids conflict]
+- Strengths: [e.g., good listener, logical, caring]
+- Weaknesses: [e.g., forgets dates, gets defensive, says wrong thing under pressure]
+
+## About My Partner
+- Name: [Her name]
+- Personality: [e.g., emotional, caring, expects attention]
+- What she values: [e.g., honesty, quality time, small gestures]
+- What annoys her: [e.g., being ignored, short answers, forgetting things]
+- Her love language: [e.g., words of affirmation, acts of service]
+
+## Our Dynamic
+- Relationship type: [e.g., married 3 years, dating]
+- Common topics we talk about: [e.g., work, kids, plans, family]
+- Common arguments about: [e.g., spending, time management, in-laws]
+- What works to de-escalate: [e.g., humor, agreeing first then explaining, hug]
+
+## My Goals
+- I want to be: [e.g., more attentive, funnier, better at handling conflict]
+- Help me with: [e.g., remembering to compliment, avoiding defensive responses]
+- Tone I want suggestions in: [e.g., warm, witty, romantic, calm]
+
+## Important Rules
+- Never suggest anything dishonest
+- Keep suggestions natural (how I actually talk)
+- If she's upset, prioritize empathy over being right
+- [Add your own rules here]
+
+## Things to Remember
+- [Anniversary date, important dates]
+- [Her favorite things]
+- [Topics to avoid]
+- [Inside jokes that work]

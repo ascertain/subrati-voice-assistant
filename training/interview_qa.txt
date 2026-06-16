@@ -1,0 +1,925 @@
+# ============================================================
+# ROUND 1: LEADERSHIP (YK Kuang - Sr. Manager)
+# Tuesday June 23, 5:00 PM - 5:45 PM
+# ============================================================
+# Focus: Leading teams, influencing quality, setting direction
+# Tip: He's a manager — he wants to see you can LEAD, not just execute
+# ============================================================
+
+---
+
+Q: Tell me about yourself and why you're interested in this role.
+
+A: I'm a test automation engineer with strong experience in hardware-software integration testing. At IKEA, I've been working with retail technology — POS devices, biometric readers, kiosk systems — where physical hardware must talk perfectly with software. I've built automation frameworks using Selenium and Appium, and led test strategies across multiple teams.
+
+What draws me to Rivian's VAS role is the same core challenge at a higher scale: making sure hardware and software interact reliably. A door lock MUST work. A phone key MUST authenticate. The stakes are higher than retail, and that excites me. I want to bring my cross-team leadership and automation thinking to help Rivian scale its test confidence.
+
+---
+
+Q: Give an example where you raised the quality bar beyond your own team.
+
+A: At IKEA, our POS devices were having intermittent failures after software updates. The problem was crossing three teams — device firmware, backend services, and store operations. Nobody owned the gap.
+
+I took initiative. I proposed a shared test environment that simulated real POS hardware against the backend — essentially a mini HIL setup. I built the first prototype in Python, demonstrated that it caught 40% of bugs that were reaching stores, and then coached two other teams to add their own test cases.
+
+The result: store-reported POS issues dropped by half within 3 months. More importantly, it created a culture where teams started thinking about integration testing earlier.
+
+---
+
+Q: How do you think about test strategy at a staff level?
+
+A: I think in layers of risk. First question: what failure hurts the customer most? For VAS, that's "customer can't enter their car." Second: where in the development lifecycle can I catch that failure cheapest?
+
+I map a risk-coverage matrix:
+- Critical path (unlock/lock) → must be tested at every level: unit, SIL, HIL, vehicle
+- Convenience features (phone key latency) → SIL + HIL is enough
+- Security (relay attacks) → dedicated adversarial test suite
+
+Then I identify gaps: where are we testing too much at the wrong level? Where are bugs escaping? I use escape analysis data to continuously adjust.
+
+At staff level, my job isn't to write every test — it's to make sure the right tests exist at the right level and the team can maintain them.
+
+---
+
+Q: How do you influence people who don't report to you?
+
+A: Data and demonstrations. I never start with "you should do X." I start with "here's what I observed" and "let me show you what happens when we try this approach."
+
+At IKEA, a development team didn't want to write integration tests — they said unit tests were enough. Instead of arguing, I proposed a 2-week experiment. We tracked which bugs escaped to production. The data showed three critical interface bugs that unit tests couldn't catch. After seeing the evidence, the team not only agreed but became advocates for integration testing.
+
+The pattern: show, don't tell. Make it easy. Remove friction. People adopt things that make their lives better.
+
+---
+
+Q: How do you handle a situation where test infrastructure is unreliable and blocking the team?
+
+A: This happened at IKEA. Our test environment for POS devices was unstable — tests passed locally but failed in CI randomly. The team was losing trust in automated tests.
+
+My approach:
+1. First, quarantine the flaky tests — move them to a separate "investigating" suite so they stop blocking PRs
+2. Instrument them — add timing logs, environment checks, state dumps
+3. Find the pattern — in our case, it was a shared database state between parallel tests
+4. Fix root cause — added proper test isolation with fixtures that reset state
+5. Create a "reliability standard" — any new test must pass 50 consecutive runs before merging
+
+Within a month, CI green rate went from 70% to 95%. Teams trusted the pipeline again.
+
+---
+
+Q: What's your philosophy on mentoring engineers?
+
+A: I believe in making people feel safe to fail and learn. My approach:
+1. Pair on real problems — not artificial exercises
+2. Show the "why" before the "how"
+3. Let them struggle a bit, then guide — don't just give answers
+4. Celebrate progress publicly
+
+At IKEA, I had a junior engineer struggling with async test patterns. Instead of rewriting their code, I sat with them for 2 hours, we drew the timing diagram on a whiteboard, and I asked questions until they found the solution themselves. Six months later, they were teaching the same pattern to new joiners.
+
+---
+
+Q: How would you define success in this role in the first 6 months?
+
+A: Month 1-2: Listen, learn, understand. Map the current test landscape — what exists, what's manual, where bugs escape, what's flaky. Build relationships with the firmware team, systems team, and hardware team.
+
+Month 3-4: Identify the highest-impact gap. Maybe it's SIL test coverage, maybe it's CI reliability, maybe it's observability. Pick ONE thing that delivers visible value and execute it.
+
+Month 5-6: Scale that pattern. Document it, coach others, get buy-in for the next investment. Start building the longer-term test architecture vision.
+
+The key: I don't come in changing everything. I come in listening, then acting where impact is highest.
+
+---
+
+Q: How do you handle pressure when there's a release deadline and test coverage isn't where you want it?
+
+A: I make risk-based decisions explicit. I create a one-page "test confidence report" that shows:
+- What's covered and passing
+- What's known gaps (with risk level)
+- What I recommend: ship / ship with monitoring / hold
+
+At IKEA, before a major POS update rollout, we had 80% test coverage but hadn't validated one edge case in the payment flow. I flagged it, proposed shipping to 5 pilot stores first with extra monitoring, and within a week we confirmed it was fine. The alternative — blocking the entire rollout for 100+ stores — would have cost far more.
+
+Being staff-level means having the judgment to balance risk, not always demanding perfection.
+
+---
+
+# ============================================================
+# ROUND 2: TECHNICAL - CODING (Pengfei Chen - Senior SW Engineer)
+# Tuesday June 23, 6:00 PM - 6:45 PM
+# ============================================================
+# Focus: Python coding, test automation, pytest, mocking, debugging
+# Tip: Write clean, readable code. Explain as you code.
+# ============================================================
+
+---
+
+Q: Write a Python test for a BLE device connection with timeout handling.
+
+A:
+```python
+import pytest
+import time
+from unittest.mock import MagicMock, patch
+
+class BLEDevice:
+    """Represents a BLE connection to VAS hardware (like Morpho USB connection)."""
+    
+    def __init__(self, adapter):
+        self.adapter = adapter
+        self.connected = False
+    
+    def connect(self, mac_address, timeout=5.0):
+        """Connect to BLE device within timeout."""
+        start = time.perf_counter()
+        while time.perf_counter() - start < timeout:
+            result = self.adapter.scan_and_connect(mac_address)
+            if result == "connected":
+                self.connected = True
+                return True
+            time.sleep(0.1)
+        raise TimeoutError(f"Failed to connect to {mac_address} within {timeout}s")
+    
+    def send_command(self, cmd_bytes):
+        """Send command and return response."""
+        if not self.connected:
+            raise ConnectionError("Not connected")
+        return self.adapter.write_read(cmd_bytes)
+
+
+# --- TESTS ---
+
+@pytest.fixture
+def mock_adapter():
+    """Mock BLE adapter (like we mock Morpho device at IKEA)."""
+    return MagicMock()
+
+@pytest.fixture
+def ble_device(mock_adapter):
+    return BLEDevice(mock_adapter)
+
+
+class TestBLEConnection:
+    
+    def test_connect_success(self, ble_device, mock_adapter):
+        """Happy path: device connects immediately."""
+        mock_adapter.scan_and_connect.return_value = "connected"
+        
+        result = ble_device.connect("AA:BB:CC:DD:EE:FF")
+        
+        assert result is True
+        assert ble_device.connected is True
+        mock_adapter.scan_and_connect.assert_called_with("AA:BB:CC:DD:EE:FF")
+    
+    def test_connect_timeout(self, ble_device, mock_adapter):
+        """Device doesn't respond — should raise TimeoutError."""
+        mock_adapter.scan_and_connect.return_value = "not_found"
+        
+        with pytest.raises(TimeoutError):
+            ble_device.connect("AA:BB:CC:DD:EE:FF", timeout=0.5)
+    
+    def test_connect_retry_then_success(self, ble_device, mock_adapter):
+        """Device found after retries (like Morpho needing warm-up)."""
+        mock_adapter.scan_and_connect.side_effect = [
+            "not_found", "not_found", "connected"
+        ]
+        
+        result = ble_device.connect("AA:BB:CC:DD:EE:FF", timeout=5.0)
+        
+        assert result is True
+        assert mock_adapter.scan_and_connect.call_count >= 3
+    
+    def test_send_command_when_not_connected(self, ble_device):
+        """Should fail gracefully if not connected."""
+        with pytest.raises(ConnectionError, match="Not connected"):
+            ble_device.send_command(b'\x01\x02')
+    
+    def test_send_unlock_command(self, ble_device, mock_adapter):
+        """Send unlock and verify response."""
+        mock_adapter.scan_and_connect.return_value = "connected"
+        mock_adapter.write_read.return_value = b'\x00\x01'  # ACK
+        
+        ble_device.connect("AA:BB:CC:DD:EE:FF")
+        response = ble_device.send_command(b'\x01\x00\x55')  # Unlock cmd
+        
+        assert response == b'\x00\x01'
+```
+
+---
+
+Q: How would you handle test data and fixtures for hardware tests?
+
+A:
+```python
+import pytest
+import json
+
+# --- FIXTURES PATTERN (same structure I use at IKEA for POS testing) ---
+
+@pytest.fixture(params=["phone_key", "key_fob", "nfc_card"])
+def access_method(request):
+    """Parameterize tests to run for all access methods."""
+    configs = {
+        "phone_key": {"protocol": "BLE", "timeout": 2.0, "auth": "crypto"},
+        "key_fob": {"protocol": "UHF", "timeout": 0.5, "auth": "rolling_code"},
+        "nfc_card": {"protocol": "NFC", "timeout": 1.0, "auth": "mutual"},
+    }
+    return configs[request.param]
+
+
+@pytest.fixture
+def door_lock_sim():
+    """Simulated door lock ECU (like our POS simulator at IKEA)."""
+    class DoorLockSim:
+        def __init__(self):
+            self.state = "locked"
+            self.commands_received = []
+        
+        def receive_command(self, cmd):
+            self.commands_received.append(cmd)
+            if cmd == "unlock" and self.state == "locked":
+                self.state = "unlocked"
+                return {"status": "ok", "new_state": "unlocked"}
+            elif cmd == "lock" and self.state == "unlocked":
+                self.state = "locked"
+                return {"status": "ok", "new_state": "locked"}
+            return {"status": "error", "reason": "invalid_transition"}
+        
+        def reset(self):
+            self.state = "locked"
+            self.commands_received.clear()
+    
+    sim = DoorLockSim()
+    yield sim
+    sim.reset()  # Cleanup after test
+
+
+class TestDoorAccess:
+    
+    def test_unlock_from_locked(self, door_lock_sim, access_method):
+        """Verify unlock works for all access methods."""
+        result = door_lock_sim.receive_command("unlock")
+        
+        assert result["status"] == "ok"
+        assert door_lock_sim.state == "unlocked"
+    
+    def test_double_unlock_rejected(self, door_lock_sim):
+        """Unlocking when already unlocked → error."""
+        door_lock_sim.receive_command("unlock")
+        result = door_lock_sim.receive_command("unlock")
+        
+        assert result["status"] == "error"
+```
+
+---
+
+Q: Write a function that validates CAN bus message timing.
+
+A:
+```python
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class CANMessage:
+    timestamp_ms: float
+    message_id: int
+    data: bytes
+
+def validate_message_timing(
+    messages: List[CANMessage],
+    expected_id: int,
+    min_interval_ms: float,
+    max_interval_ms: float
+) -> dict:
+    """
+    Validate that CAN messages arrive at expected intervals.
+    Like validating POS heartbeat messages at IKEA.
+    
+    Returns: {"valid": bool, "violations": [...], "stats": {...}}
+    """
+    filtered = [m for m in messages if m.message_id == expected_id]
+    
+    if len(filtered) < 2:
+        return {"valid": False, "violations": ["Not enough messages"], "stats": {}}
+    
+    intervals = []
+    violations = []
+    
+    for i in range(1, len(filtered)):
+        interval = filtered[i].timestamp_ms - filtered[i-1].timestamp_ms
+        intervals.append(interval)
+        
+        if interval < min_interval_ms:
+            violations.append(
+                f"Message {i}: interval {interval:.1f}ms < min {min_interval_ms}ms"
+            )
+        elif interval > max_interval_ms:
+            violations.append(
+                f"Message {i}: interval {interval:.1f}ms > max {max_interval_ms}ms"
+            )
+    
+    stats = {
+        "count": len(filtered),
+        "avg_interval_ms": sum(intervals) / len(intervals),
+        "min_interval_ms": min(intervals),
+        "max_interval_ms": max(intervals),
+    }
+    
+    return {
+        "valid": len(violations) == 0,
+        "violations": violations,
+        "stats": stats,
+    }
+
+
+# Test for the validator:
+def test_can_timing_valid():
+    messages = [
+        CANMessage(0, 0x100, b'\x01'),
+        CANMessage(100, 0x100, b'\x02'),
+        CANMessage(200, 0x100, b'\x03'),
+        CANMessage(300, 0x100, b'\x04'),
+    ]
+    result = validate_message_timing(messages, 0x100, min_interval_ms=80, max_interval_ms=120)
+    assert result["valid"] is True
+
+def test_can_timing_violation():
+    messages = [
+        CANMessage(0, 0x100, b'\x01'),
+        CANMessage(50, 0x100, b'\x02'),   # Too fast!
+        CANMessage(200, 0x100, b'\x03'),
+    ]
+    result = validate_message_timing(messages, 0x100, min_interval_ms=80, max_interval_ms=120)
+    assert result["valid"] is False
+    assert len(result["violations"]) > 0
+```
+
+---
+
+Q: How do you make tests reliable in CI when they depend on hardware timing?
+
+A: "At IKEA, this was our biggest challenge with POS device tests. Here's what I learned:
+
+1. **Separate timing tests from logic tests** — logic tests use mocks (always fast), timing tests only run on dedicated hardware
+2. **Use configurable timeouts** — not hardcoded values:
+```python
+TIMEOUT = float(os.environ.get('BLE_TIMEOUT', '2.0'))  # Longer in CI
+```
+3. **Retry with backoff for hardware operations** (not for assertions):
+```python
+@retry(attempts=3, delay=0.5, exceptions=(ConnectionError,))
+def connect_device(adapter, mac):
+    return adapter.connect(mac)
+```
+4. **Report timing as metrics** — even passing tests report their timing so we spot degradation early
+5. **Flakiness budget** — if a test fails > 2% of runs, it goes into quarantine for investigation"
+
+---
+
+Q: Debug this code — why does this test fail intermittently?
+```python
+def test_door_lock_state():
+    lock = DoorLock()
+    lock.unlock()
+    assert lock.state == "unlocked"  # Sometimes fails!
+```
+
+A: "Classic async/hardware timing issue. The `unlock()` likely sends a command but the state doesn't update instantly. I've seen this exact pattern with our Morpho devices.
+
+Possible fixes:
+```python
+# Fix 1: Wait for state change (polling with timeout)
+def test_door_lock_state():
+    lock = DoorLock()
+    lock.unlock()
+    
+    # Poll until state changes or timeout
+    for _ in range(50):  # 50 * 20ms = 1 second max
+        if lock.state == "unlocked":
+            break
+        time.sleep(0.02)
+    
+    assert lock.state == "unlocked"
+
+# Fix 2: Better — use event/callback pattern
+def test_door_lock_state_with_event():
+    lock = DoorLock()
+    event = threading.Event()
+    lock.on_state_change = lambda s: event.set()
+    
+    lock.unlock()
+    assert event.wait(timeout=2.0), "State change timeout"
+    assert lock.state == "unlocked"
+
+# Fix 3: Best — separate the concerns
+def test_unlock_command_sent():
+    '''Test command is sent correctly (no timing dependency).'''
+    lock = DoorLock(adapter=mock_adapter)
+    lock.unlock()
+    mock_adapter.send.assert_called_with(UNLOCK_CMD)
+
+def test_state_updates_on_ack():
+    '''Test state changes when ACK received (no hardware dependency).'''
+    lock = DoorLock()
+    lock._handle_response(ACK_BYTES)
+    assert lock.state == "unlocked"
+```
+
+The key insight: split hardware interaction from state logic. Test each independently."
+
+---
+
+Q: How do you structure test automation for maintainability?
+
+A: "Same principles I use at IKEA. I follow the 'Test Pyramid in Code':
+
+```
+tests/
+├── conftest.py              # Shared fixtures, parametrize
+├── unit/                    # Fast, no hardware — 80% of tests
+│   ├── test_auth_logic.py
+│   └── test_state_machine.py
+├── integration/             # SIL-level — simulated hardware
+│   ├── test_ble_protocol.py
+│   └── test_can_messages.py
+├── hil/                     # Real hardware — runs nightly
+│   ├── test_door_timing.py
+│   └── test_signal_strength.py
+└── helpers/
+    ├── simulators.py        # Hardware simulators
+    ├── assertions.py        # Custom assertions (timing, protocol)
+    └── retry.py             # Retry utilities
+```
+
+Key rules:
+1. **One assertion per test** — easy to see what broke
+2. **Fixtures manage state** — tests never call setup/teardown directly
+3. **No sleep in tests** — use polling or events
+4. **Custom assertions for domain** — `assert_responded_within(500)` not `assert time < 0.5`
+5. **Tests tell a story** — name = scenario, not implementation"
+
+---
+
+# ============================================================
+# ROUND 3: CROSS-FUNCTIONAL DOMAIN (Chun-Wei Chen - Staff SW Engineer)
+# Tuesday June 23, 7:00 PM - 7:45 PM
+# ============================================================
+# Focus: SIL/HIL, hardware-software debugging, systems thinking
+# Tip: He's staff level — show PEER-level thinking, not junior explanations
+# ============================================================
+
+---
+
+Q: Explain SIL vs HIL — when do you use each?
+
+A: "I think of it like testing levels for an IKEA self-checkout kiosk:
+
+**SIL (Software-in-the-Loop):**
+- Run the firmware logic on a PC, simulated inputs/outputs
+- Fast: seconds to run, everyone can run it locally
+- Catches: logic bugs, state machine errors, protocol parsing
+- Misses: timing, electrical, real hardware quirks
+- Example: test that BLE handshake logic produces correct auth token
+
+**HIL (Hardware-in-the-Loop):**
+- Real ECU on a bench, real sensors, test controller as stimulus
+- Slower: minutes, needs dedicated bench
+- Catches: timing violations, signal integrity, firmware-hardware mismatch
+- Misses: full vehicle integration, multi-ECU interactions
+- Example: test that door actually unlocks within 500ms when real BLE signal received
+
+**My rule of thumb:**
+- If it's a logic question → SIL (fast feedback)
+- If it involves timing, signals, or real interfaces → HIL
+- If it involves multiple systems together → vehicle/system test
+
+At IKEA: we ran POS protocol tests in SIL (software simulator), then validated real terminal timing on a bench (our version of HIL), then final validation in a pilot store."
+
+---
+
+Q: Walk me through debugging a failure where the car door doesn't unlock via phone.
+
+A: "I'll use the same systematic approach I use for IKEA POS failures:
+
+**Step 1: Scope the problem (2 min)**
+- Is it one car or many? (hardware batch vs software bug)
+- Is it one phone model or all? (compatibility vs protocol)
+- Was there a recent OTA update? (regression)
+- Does key fob work? (isolates BLE vs lock mechanism)
+
+**Step 2: Trace the signal path (5 min)**
+Look at each link in the chain:
+```
+Phone App → BLE signal → Antenna → ECU receives → Auth check → CAN message → Actuator → Door unlocks
+```
+Which link is broken?
+
+**Step 3: Check logs and data (10 min)**
+- ECU log: did it even receive a BLE advertisement?
+- Auth log: did crypto handshake complete?
+- CAN trace: was unlock command sent on the bus?
+- Actuator log: did motor engage?
+
+**Step 4: Isolate (15 min)**
+If BLE connection fails:
+- Signal strength? (RSSI too low = antenna issue)
+- Phone BLE version compatible?
+- Firmware state? (is ECU in sleep mode not scanning?)
+
+If auth fails:
+- Key rotation? (expired crypto key)
+- Clock sync? (timestamp validation failing)
+
+If CAN message sent but door doesn't unlock:
+- CAN bus issue? (check error frames)
+- Actuator mechanical failure?
+- Power issue? (battery voltage too low for actuator)
+
+**Step 5: Reproduce and fix**
+- Write a test that recreates the exact failure condition
+- Fix the bug
+- Add the test to HIL regression suite so it never escapes again
+
+At IKEA, I used this exact approach when Morpho fingerprint readers randomly timed out. Turned out to be USB buffer overflow under sustained load. I added a load-duration test to catch it."
+
+---
+
+Q: How would you test a feature that has security implications (e.g., relay attack prevention)?
+
+A: "Security testing needs a different mindset — adversarial, not just functional.
+
+For VAS relay attack prevention:
+1. **Understand the attack:** Thief uses two devices to relay BLE signal from your phone (inside house) to car (in driveway)
+2. **What should happen:** Car detects abnormal signal timing/distance and refuses to unlock
+
+**Test approach:**
+- **Unit test:** Verify distance-estimation algorithm rejects signals with > 10ms round-trip
+- **SIL test:** Simulate relay by adding artificial latency to BLE mock — verify rejection
+- **HIL test:** Two BLE adapters on bench with programmable delay — verify ECU detects relay
+- **Adversarial test:** Actually attempt relay attack with real equipment — verify car stays locked
+
+**CI integration:**
+- SIL relay tests run on every commit (fast, catches regressions)
+- HIL adversarial tests run weekly (more realistic)
+- Penetration test by security team quarterly (human creativity)
+
+At IKEA, we did similar adversarial testing for payment skimming on POS devices — simulated tamper signals and verified the device shut down. Same principle: think like the attacker, test like the attacker."
+
+---
+
+Q: How do you work with firmware developers who say "it works on my board"?
+
+A: "I've heard this many times at IKEA with POS devices! My approach:
+
+1. **Never blame** — 'Let's figure this out together, both our perspectives are valuable'
+2. **Reproduce with evidence** — 'Here's a test log showing the exact failure: timestamp, inputs, expected vs actual'
+3. **Offer to pair** — 'Can I watch it on your board? Maybe the environment difference gives us a clue'
+4. **Bridge the gap** — often the issue is BETWEEN environments (different timing, different config, different firmware build flags)
+
+Real example: At IKEA, a Morpho developer said fingerprint matching 'works fine on the dev board.' I paired with them and discovered their dev board used a faster clock than production devices. Matching took 200ms on dev board but 450ms on production — exceeding our 400ms timeout.
+
+Fix: adjusted the timeout AND added the clock speed as a parameter in our SIL simulator so we could catch this earlier.
+
+**Key lesson:** 'Works on my board' usually means there's an environment difference worth finding."
+
+---
+
+Q: How do you ensure test coverage for state machines in embedded systems?
+
+A: "Door lock is a perfect state machine example:
+
+```
+States: Locked, Unlocked, Error, Sleep
+Transitions: unlock_cmd, lock_cmd, timeout, fault, wake
+
+       ┌─── unlock ───┐
+       ▼               │
+   [Locked] ──────► [Unlocked]
+       │                │
+       │   timeout      │
+       ▼                ▼
+    [Sleep]         [Locked]
+       │
+    fault
+       ▼
+    [Error]
+```
+
+**My coverage strategy:**
+
+1. **All valid transitions** (happy paths):
+   - Locked → Unlocked (via unlock command)
+   - Unlocked → Locked (via lock command or timeout)
+
+2. **All invalid transitions** (boundary cases):
+   - Locked → Locked (double lock — should it error or ignore?)
+   - Error → any (what recovers from error?)
+
+3. **Edge cases in transitions:**
+   - Command received during state transition (race condition)
+   - Power loss during transition
+   - Multiple simultaneous commands
+
+4. **Long-running state scenarios:**
+   - Stay in unlocked for hours (does timeout work?)
+   - Rapid lock/unlock cycles (stress test)
+
+**Tool:** I generate test cases from a state machine model. Every state + every event = one test. If there are N states and M events, I need at minimum N×M tests to cover all transitions (valid and invalid)."
+
+---
+
+Q: How do you handle testing across multiple ECUs that need to coordinate?
+
+A: "At IKEA, this is like testing the checkout flow where POS terminal, receipt printer, and inventory system must coordinate.
+
+For VAS multi-ECU: phone talks to Body Controller → Body Controller sends CAN to Door Module → Door Module drives actuator.
+
+**Testing layers:**
+1. **Interface contracts** — define exactly what messages each ECU expects/produces. Test each in isolation against the contract.
+2. **Integration (SIL)** — run all ECU software in simulation, verify end-to-end message flow
+3. **Integration (HIL)** — real ECUs on bench, verify timing and signal integrity
+4. **Fault injection** — what if one ECU is slow? What if a message is lost?
+
+**Key pattern — Contract Testing:**
+```
+ECU_A produces: CAN ID 0x100, 8 bytes, every 100ms
+ECU_B expects:  CAN ID 0x100, 8 bytes, within 150ms
+
+Test A independently: does it produce correctly?
+Test B independently: does it handle correctly when received?
+Integration test: does the actual timing work?
+```
+
+At IKEA: we used this for POS ↔ backend ↔ inventory integration. Each team tests against the contract. Integration tests verify the contracts work together."
+
+---
+
+# ============================================================
+# ROUND 4: SYSTEMS DESIGN (Chinmay Shalawadi - Sr. SW Engineer)
+# Thursday June 25, 6:00 PM - 6:45 PM
+# ============================================================
+# Focus: Architecture, observability, scaling, system design
+# Tip: Think BIG PICTURE. Draw diagrams (mentally). Structure your answer.
+# ============================================================
+
+---
+
+Q: Design a complete test automation system for VAS. Walk me through the architecture.
+
+A: "Let me structure this in layers — same approach I used building IKEA's test infrastructure:
+
+**Requirements first:**
+- Run unit/SIL tests on every PR (< 5 min)
+- Run HIL tests nightly (< 2 hours)
+- Run vehicle tests weekly (< 1 day)
+- Any engineer can add tests without deep infra knowledge
+- Failures must be diagnosable within 30 minutes
+
+**Architecture:**
+
+```
+┌──────────────────────────────────────────┐
+│            CI/CD Pipeline (Jenkins/GHA)   │
+├──────────────────────────────────────────┤
+│                                          │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐ │
+│  │  Unit   │  │   SIL   │  │   HIL   │ │
+│  │  Tests  │  │  Tests  │  │  Tests  │ │
+│  └────┬────┘  └────┬────┘  └────┬────┘ │
+│       │             │             │      │
+│       ▼             ▼             ▼      │
+│  ┌──────────────────────────────────┐   │
+│  │     pytest + Custom Fixtures     │   │
+│  │  (same tests, different backend) │   │
+│  └──────────────────┬───────────────┘   │
+│                     │                    │
+│       ┌─────────────┼─────────────┐     │
+│       ▼             ▼             ▼     │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐│
+│  │Simulator│  │  SIL    │  │  Real   ││
+│  │ (Mock)  │  │  (QEMU) │  │Hardware ││
+│  └─────────┘  └─────────┘  └─────────┘│
+│                                         │
+├─────────────────────────────────────────┤
+│  Observability Layer:                   │
+│  - Structured logs → Elasticsearch      │
+│  - Timing metrics → Grafana             │
+│  - CAN traces → auto-attached to fails  │
+│  - Test reports → dashboard             │
+└─────────────────────────────────────────┘
+```
+
+**Key design decision:** Same test code runs at all levels. Only the fixture changes:
+```python
+@pytest.fixture
+def door_lock(request):
+    env = request.config.getoption('--env')
+    if env == 'mock':
+        return MockDoorLock()
+    elif env == 'sil':
+        return SILDoorLock(qemu_instance)
+    elif env == 'hil':
+        return HILDoorLock(serial_port='/dev/ttyUSB0')
+```
+
+This means: write once, test at every level. Maximum reuse."
+
+---
+
+Q: How would you design for observability in an embedded system?
+
+A: "From my experience debugging POS device issues in IKEA stores remotely — observability is the difference between 5-minute and 5-day debugging.
+
+**My observability framework for VAS:**
+
+**1. Structured Event Logging (in firmware):**
+```c
+// Every state change logged as structured event
+LOG_EVENT(EVT_BLE_CONNECT, .mac=peer_mac, .rssi=-45, .latency_ms=120);
+LOG_EVENT(EVT_AUTH_START, .method=PHONE_KEY, .key_id=0x1234);
+LOG_EVENT(EVT_AUTH_RESULT, .success=true, .duration_ms=50);
+LOG_EVENT(EVT_DOOR_UNLOCK, .source=BLE, .actuator_current_ma=150);
+```
+
+**2. Timing Traces:**
+Every critical path has entry/exit timestamps:
+```
+[T+0ms]   BLE advertisement received
+[T+120ms] Connection established
+[T+170ms] Auth challenge sent
+[T+220ms] Auth response received
+[T+225ms] Auth verified
+[T+230ms] CAN unlock command sent
+[T+235ms] Actuator ACK received
+[T+340ms] Door unlocked (total: 340ms ✓ < 500ms requirement)
+```
+
+**3. Test Artifact Collection:**
+Every test failure auto-captures:
+- ECU log (last 1000 events)
+- CAN bus trace (last 5 seconds)
+- BLE sniffer capture
+- Power rail measurements
+- Screenshot of state machine position
+
+**4. Dashboard:**
+- Real-time: test pass rate, average timing, flakiness score
+- Trend: are tests getting slower? Are new bugs appearing?
+- Drill-down: click a failure → see all artifacts
+
+**Principle:** If someone reports 'door didn't unlock,' I should be able to find the root cause from logs alone within 30 minutes."
+
+---
+
+Q: How do you decide what to automate and what to test manually?
+
+A: "I use a 2x2 matrix — same framework I applied at IKEA:
+
+```
+                    HIGH FREQUENCY
+                    (runs often)
+                         │
+    ┌────────────────────┼────────────────────┐
+    │                    │                    │
+    │   AUTOMATE NOW     │   AUTOMATE FOR    │
+    │   (unlock/lock     │   REGRESSION      │
+HIGH│    daily CI)       │   (OTA update     │
+RISK│                    │    validation)    │
+    │                    │                    │
+    ├────────────────────┼────────────────────┤
+    │                    │                    │
+    │   AUTOMATE IF      │   MANUAL/         │
+LOW │   CHEAP            │   EXPLORATORY     │
+RISK│   (BLE protocol    │   (rare edge      │
+    │    compliance)     │    cases)         │
+    │                    │                    │
+    └────────────────────┼────────────────────┘
+                         │
+                    LOW FREQUENCY
+```
+
+**Automate first:** critical path × high frequency = unlock/lock flow, phone key connection
+**Automate second:** security tests that must pass on every release
+**Manual/exploratory:** new hardware variants, unusual failure scenarios, creative adversarial testing
+
+At IKEA: automated the top 10 checkout flows first (80% of transactions), then payment edge cases, then left hardware setup validation as manual (rare, changes infrequently)."
+
+---
+
+Q: How would you handle a situation where SIL tests pass but HIL tests fail?
+
+A: "This is the most interesting debugging scenario! It means the gap between simulation and reality.
+
+**Common root causes (from my experience):**
+
+1. **Timing:** SIL runs on fast PC, HIL runs on real MCU clock. Something is timing-sensitive.
+   - Fix: add timing constraints to SIL simulator
+
+2. **Signal fidelity:** SIL gives perfect signals, HIL has noise/interference.
+   - Fix: add noise model to SIL
+
+3. **Initialization sequence:** SIL starts in known state, HIL has boot sequence.
+   - Fix: HIL fixture must wait for boot + known state
+
+4. **Hardware quirks:** real device behaves slightly different from datasheet.
+   - Fix: update simulator to match real behavior (document the quirk!)
+
+5. **Environment:** temperature, power supply variation, EMI.
+   - Fix: these can't be in SIL — accept some tests are HIL-only
+
+**My process:**
+1. Get the exact failure from HIL (log, trace)
+2. Try to reproduce in SIL with more realistic parameters
+3. If I can reproduce in SIL → fix the simulator fidelity → fix the bug
+4. If I can't reproduce in SIL → it's a hardware/environment issue → keep as HIL-only test
+
+**Key insight:** SIL-HIL gap is a SIGNAL. It tells you what your simulator doesn't model yet. Reduce the gap over time."
+
+---
+
+Q: How do you approach CI/CD for embedded systems where you need real hardware?
+
+A: "This is a real constraint. At IKEA we solved it for POS devices:
+
+**Three-tier CI:**
+
+| Tier | Trigger | Duration | Hardware | What it catches |
+|------|---------|----------|----------|-----------------|
+| Fast CI | Every commit | < 5 min | None (mocks) | Logic bugs, API breaks |
+| SIL CI | Every PR merge | < 30 min | Simulators | Integration, protocol |
+| HIL CI | Nightly + release | < 2 hours | Real ECUs | Timing, hardware |
+
+**Hardware farm management:**
+- Pool of HIL benches (like a device farm)
+- Tests queue up, get assigned to next available bench
+- Each bench has known configuration (firmware version, calibration)
+- Auto-reset between test runs (power cycle + flash baseline firmware)
+
+**When HIL is busy/broken:**
+- SIL results are 'go/no-go' for merge
+- HIL failures are next-day priority investigation
+- Release requires clean HIL run (gate)
+
+**At IKEA:** We had 5 POS test terminals that CI scheduled against. If one broke, tests distributed to others. Same concept for a VAS HIL farm."
+
+---
+
+Q: Design a root cause analysis process for recurring field failures.
+
+A: "I'd implement what I call 'Failure Funnel':
+
+**Level 1: Detection (automated)**
+- Telemetry from vehicles detects anomaly (door unlock > 2 seconds or failure)
+- Auto-creates ticket with: VIN, timestamp, firmware version, ECU logs
+
+**Level 2: Classification (semi-automated)**
+- Cluster similar failures (same firmware? same phone model? same region?)
+- Match against known issues database
+- Priority: Safety (P1) → Function (P2) → Convenience (P3)
+
+**Level 3: Investigation (engineer)**
+- Pull detailed logs from affected vehicle
+- Trace signal path: where did it break?
+- Check: is this new or regression?
+
+**Level 4: Reproduce**
+- Attempt to reproduce on HIL bench with same firmware + conditions
+- If reproducible → fix → add regression test
+- If not reproducible → add more logging → wait for next occurrence
+
+**Level 5: Prevention**
+- Root cause fixed
+- Test added at lowest possible level (SIL if possible)
+- Simulator updated if it missed this scenario
+- Knowledge shared: 'lessons learned' document
+
+**Metrics:**
+- Mean time to detect (MTTD)
+- Mean time to reproduce (MTTR)
+- Mean time to fix (MTTF)
+- Escape rate per test level (where SHOULD this have been caught?)
+
+At IKEA: we used this for POS failure analysis. Tracked which test level should have caught each production bug, then invested in closing those gaps."
+
+---
+
+# ============================================================
+# QUICK REFERENCE: IKEA → VAS TRANSLATION TABLE
+# ============================================================
+# Use these bridges in EVERY answer:
+
+# IKEA POS Terminal      → VAS Door Lock ECU
+# Morpho Biometric       → VAS BLE/NFC Sensor
+# Kiosk System           → VAS Full Vehicle
+# Store Deployment       → Vehicle OTA Update
+# Payment Protocol       → Authentication Protocol
+# Card Tap (NFC)         → Phone Key (BLE/UWB)
+# Receipt Printer        → Door Actuator
+# Backend Server         → Body Controller ECU
+# Selenium/Appium        → pytest + Hardware Drivers
+# Store Network          → CAN Bus
+# POS Simulator          → SIL Environment
+# POS Test Terminal      → HIL Bench
+# Pilot Store Test       → Vehicle Test Track
+# Multiple Store Rollout → Fleet OTA Release
+# ============================================================
