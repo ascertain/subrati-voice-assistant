@@ -4,3 +4,6 @@ vosk-model.zip
 __pycache__/
 *.pyc
 myenv/
+training/memory.json
+training/learnings.json
+summaries/
